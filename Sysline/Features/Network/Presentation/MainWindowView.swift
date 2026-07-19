@@ -17,6 +17,8 @@ struct MainWindowView: View {
         }
         .frame(minWidth: 760, minHeight: 480)
         .preferredColorScheme(Theme.colorScheme(theme))
+        .onAppear { vm.setActive(true) }
+        .onDisappear { vm.setActive(false) }
     }
 
     @ViewBuilder

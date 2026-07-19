@@ -98,6 +98,79 @@ private struct AppSettingsSection: View {
                     }
                 }
             }
+
+            UpdatesSection()
+
+            SettingGroup("About") {
+                VStack(spacing: 10) {
+                    HStack(spacing: 12) {
+                        Image(nsImage: NSApp.applicationIconImage ?? NSImage())
+                            .resizable().frame(width: 40, height: 40)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Sysline").font(.system(size: 14, weight: .semibold))
+                            Text("See which apps use your internet, over time.")
+                                .font(.system(size: 11)).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Text(versionText).font(.system(size: 11)).foregroundStyle(.secondary)
+                    }
+                    Divider()
+                    SettingRow(title: "Source & issues",
+                               subtitle: "Open source on GitHub · MIT license.",
+                               icon: "chevron.left.forwardslash.chevron.right") {
+                        Button("GitHub") {
+                            NSWorkspace.shared.open(URL(string: "https://github.com/azharbinanwar/Sysline")!)
+                        }
+                        .controlSize(.small)
+                    }
+                }
+            }
+        }
+    }
+
+    private var versionText: String {
+        let v = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
+        let b = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
+        return "v\(v) (\(b))"
+    }
+}
+
+private struct UpdatesSection: View {
+    @ObservedObject private var updater = UpdateChecker.shared
+
+    var body: some View {
+        SettingGroup("Updates") {
+            SettingRow(title: "Sysline \(updater.currentVersion)",
+                       subtitle: statusText,
+                       icon: "arrow.triangle.2.circlepath") {
+                trailing
+            }
+        }
+    }
+
+    @ViewBuilder private var trailing: some View {
+        switch updater.phase {
+        case .checking:
+            ProgressView().controlSize(.small)
+        case .downloading(let p):
+            ProgressView(value: p).frame(width: 90)
+        case .installing:
+            Text("Installing…").font(.caption).foregroundStyle(.secondary)
+        case .available:
+            Button("Update & Relaunch") { Task { await updater.downloadAndInstall() } }
+                .buttonStyle(.borderedProminent).controlSize(.small)
+        default:
+            Button("Check for Updates") { Task { await updater.check() } }
+                .controlSize(.small)
+        }
+    }
+
+    private var statusText: String {
+        switch updater.phase {
+        case .available(let v): "Version \(v) is available."
+        case .upToDate: "You're up to date."
+        case .failed(let m): m
+        default: "Checks automatically once a day."
         }
     }
 }

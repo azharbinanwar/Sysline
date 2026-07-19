@@ -8,9 +8,12 @@ final class AlertEngine {
 
     private let query = NetworkQuery(db: .shared)
     private let d = UserDefaults.standard
+    private var lastRun = Date.distantPast
 
     func evaluate() async {
         let now = Date()
+        guard now.timeIntervalSince(lastRun) >= 60 else { return }   // alerts don't need 5s granularity
+        lastRun = now
 
         if d.bool(forKey: "planEnabled") {
             let start = d.double(forKey: "planStart")

@@ -10,5 +10,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(Prefs.showDockIcon ? .regular : .accessory)
         PollScheduler.shared.start()
         if Prefs.showFloatingHUD { FloatingHUD.shared.setVisible(true) }
+        Task { await UpdateChecker.shared.checkIfDue() }
     }
 }

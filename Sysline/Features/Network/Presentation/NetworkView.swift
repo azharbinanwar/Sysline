@@ -22,9 +22,10 @@ struct NetworkView: View {
         .padding(12)
         .frame(width: 340)
         .onAppear {
-            vm.reload()
+            vm.setActive(true)
             Task { since = await query.stats().since }
         }
+        .onDisappear { vm.setActive(false) }
     }
 
     private var rangePicker: some View {

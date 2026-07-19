@@ -12,12 +12,21 @@ final class NetworkViewModel: ObservableObject {
 
     private let query = NetworkQuery(db: .shared)
     private var cancellable: AnyCancellable?
+    private var isActive = false          // only refresh while the view is on screen
 
     init() {
         cancellable = NotificationCenter.default.publisher(for: .syslineDataChanged)
             .receive(on: RunLoop.main)
-            .sink { [weak self] _ in self?.reload() }
-        reload()
+            .sink { [weak self] _ in
+                guard self?.isActive == true else { return }
+                self?.reload()
+            }
+    }
+
+    // Called from onAppear/onDisappear so hidden surfaces stop querying.
+    func setActive(_ active: Bool) {
+        isActive = active
+        if active { reload() }
     }
 
     var totalIn: Int { apps.reduce(0) { $0 + $1.bytesIn } }

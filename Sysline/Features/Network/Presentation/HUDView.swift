@@ -64,5 +64,7 @@ struct HUDView: View {
         .frame(width: width, alignment: .leading)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
         .onTapGesture { NSApp.activate(ignoringOtherApps: true) }
+        .onAppear { vm.setActive(true) }
+        .onDisappear { vm.setActive(false) }
     }
 }

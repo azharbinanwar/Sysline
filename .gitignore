@@ -15,3 +15,7 @@ xcuserdata/
 
 # Local Claude settings (keep off the public repo)
 .claude/settings.local.json
+
+# Release build output
+.release-build/
+*.pcm

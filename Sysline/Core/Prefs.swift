@@ -17,7 +17,6 @@ enum Prefs {
     static var alertsEnabled: Bool { d.bool(forKey: "alertsEnabled") }
     static var dailySummary: Bool { d.bool(forKey: "dailySummary") }
     static var newNetworkAlert: Bool { d.bool(forKey: "newNetworkAlert") }
-    static var showDockIcon: Bool {
-        d.object(forKey: "showDockIcon") == nil ? true : d.bool(forKey: "showDockIcon")
-    }
+    // Off by default: menu-bar-only, no Dock burden. Users can opt into a Dock icon.
+    static var showDockIcon: Bool { d.bool(forKey: "showDockIcon") }
 }

@@ -28,7 +28,7 @@ struct SettingsPage: View {
 private struct AppSettingsSection: View {
     @AppStorage("theme") private var theme = 0
     @AppStorage("launchAtLogin") private var launchAtLogin = false
-    @AppStorage("showDockIcon") private var showDockIcon = true
+    @AppStorage("showDockIcon") private var showDockIcon = false
     @AppStorage("showFloatingHUD") private var showHUD = false
     @AppStorage("hudSize") private var hudSize = 0
     @AppStorage("hudOnTop") private var hudOnTop = true

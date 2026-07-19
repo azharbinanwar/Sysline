@@ -60,13 +60,21 @@ Check for Updates** inside the app.
 
 ## Screenshots
 
-| Menu bar popover | Floating monitor | Data-plan alerts | Speed test |
-|---|---|---|---|
-| <img src="docs/popover.png" width="240"> | <img src="docs/hud.png" width="240"> | <img src="docs/dataplan.png" width="240"> | <img src="docs/speed-test.png" width="240"> |
+Small dialogs:
 
-<div align="center"><img src="docs/speed.png" width="800" alt="Speed history"></div>
+| Menu bar popover | Floating monitor | Speed test |
+|---|---|---|
+| <img src="docs/popover.png" width="240"> | <img src="docs/hud.png" width="240"> | <img src="docs/speed-test.png" width="240"> |
 
-<div align="center"><img src="docs/settings.png" width="640" alt="Settings"></div>
+<div align="center">
+
+<img src="docs/speed.png" width="800" alt="Speed history">
+
+<img src="docs/dataplan.png" width="800" alt="Data-plan alerts">
+
+<img src="docs/settings.png" width="800" alt="Settings">
+
+</div>
 
 ## How it works
 

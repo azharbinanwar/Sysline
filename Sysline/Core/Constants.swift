@@ -17,8 +17,8 @@ enum Constants {
     ///   • bump `schemaVersion` → triggers a migration/reset, or
     ///   • change `name`        → fresh file, old one left orphaned on disk.
     enum Database {
-        static let name = "sysline_v2"
-        static let schemaVersion = 2
+        static let name = "sysline.db"
+        static let schemaVersion = 1
         static let fileExtension = "sqlite"
 
         static var fileName: String { "\(name).\(fileExtension)" }

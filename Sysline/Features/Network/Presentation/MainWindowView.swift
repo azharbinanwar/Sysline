@@ -9,6 +9,7 @@ struct MainWindowView: View {
         NavigationSplitView {
             List(selection: $nav.section) {
                 Label("Network", systemImage: "network").tag(Navigation.Section.network)
+                Label("Speed", systemImage: "speedometer").tag(Navigation.Section.speed)
                 Label("Settings", systemImage: "gearshape").tag(Navigation.Section.settings)
             }
             .navigationSplitViewColumnWidth(min: 170, ideal: 190, max: 240)
@@ -27,6 +28,8 @@ struct MainWindowView: View {
         case .settings:
             SettingsPage()
                 .navigationTitle("Settings")
+        case .speed:
+            SpeedView()
         default:
             NetworkDetailView(vm: vm)
                 .navigationTitle("Network")

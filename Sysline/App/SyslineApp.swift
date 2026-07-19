@@ -24,6 +24,13 @@ struct SyslineApp: App {
             }
         }
 
+        // Standalone speed-test dialog the menu can open without launching the app.
+        Window("Speed Test", id: "speedtest") {
+            SpeedTestSheet(network: CurrentNetwork.identifier()) {}
+        }
+        .windowResizability(.contentSize)
+        .defaultPosition(.center)
+
         MenuBarExtra("Sysline", image: "MenuIcon") {
             MenuContentView()
         }

@@ -82,6 +82,11 @@ struct NetworkView: View {
                 .help("Open Sysline window")
             Button {
                 NSApp.activate(ignoringOtherApps: true)
+                openWindow(id: "speedtest")
+            } label: { Image(systemName: "speedometer") }
+                .help("Run speed test")
+            Button {
+                NSApp.activate(ignoringOtherApps: true)
                 openWindow(id: "main")
                 Navigation.shared.section = .settings
             } label: { Image(systemName: "gearshape") }

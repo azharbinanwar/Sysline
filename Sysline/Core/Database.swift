@@ -124,6 +124,19 @@ actor Database {
         bytes_out  INTEGER NOT NULL,
         PRIMARY KEY (hour_start, bundle_id, network)
     );
+
+    CREATE TABLE IF NOT EXISTS speed_tests (
+        id        INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts        INTEGER NOT NULL,
+        down_bps  INTEGER NOT NULL,
+        up_bps    INTEGER NOT NULL,
+        ping_ms   INTEGER NOT NULL,
+        jitter_ms INTEGER NOT NULL,
+        network   TEXT    NOT NULL,
+        isp       TEXT    NOT NULL DEFAULT '',
+        place     TEXT    NOT NULL DEFAULT ''
+    );
+    CREATE INDEX IF NOT EXISTS idx_speed_ts ON speed_tests(ts);
     PRAGMA user_version = \(Constants.Database.schemaVersion);
     """
 }

@@ -1,4 +1,5 @@
 import SwiftUI
+import UserNotifications
 
 struct DataPlanSettings: View {
     @AppStorage("planEnabled") private var enabled = false
@@ -12,11 +13,20 @@ struct DataPlanSettings: View {
 
     @State private var networks: [String] = []
     @State private var used = 0
+    @State private var notifDenied = false
 
     private let query = NetworkQuery(db: .shared)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            if (enabled || dailyReminder), notifDenied {
+                SettingGroup {
+                    PermissionBanner(text: "Notifications are off for Sysline — you won't get these alerts.") {
+                        SystemSettings.openNotifications()
+                    }
+                }
+            }
+
             // 1 — Data plan: notifies once, when you cross your limit.
             SettingGroup("Data Plan") {
                 VStack(spacing: 10) {
@@ -33,15 +43,19 @@ struct DataPlanSettings: View {
                     }
                     if enabled {
                         Divider()
-                        SettingRow(title: "Start date", indented: true) {
+                        SettingRow(title: "Start date", subtitle: "When your package began.", indented: true) {
                             DatePicker("", selection: startBinding, displayedComponents: .date).labelsHidden()
                         }
                         Divider()
-                        SettingRow(title: "Plan limit", indented: true) { gbField($limitGB) }
+                        SettingRow(title: "Plan limit", subtitle: "Your total data allowance.", indented: true) {
+                            gbField($limitGB)
+                        }
                         Divider()
-                        SettingRow(title: "Notify me at", indented: true) { gbField($notifyGB) }
+                        SettingRow(title: "Notify me at", subtitle: "Alert when usage reaches this.", indented: true) {
+                            gbField($notifyGB)
+                        }
                         Divider()
-                        SettingRow(title: "Network", indented: true) {
+                        SettingRow(title: "Network", subtitle: "Which connection to count.", indented: true) {
                             Picker("", selection: $network) {
                                 Text("Total").tag("")
                                 ForEach(networks, id: \.self) { Text($0).tag($0) }
@@ -72,7 +86,9 @@ struct DataPlanSettings: View {
                     }
                     if dailyReminder {
                         Divider()
-                        SettingRow(title: "Reminder time", indented: true) {
+                        SettingRow(title: "Reminder time",
+                                   subtitle: "When your daily usage note arrives.",
+                                   indented: true) {
                             DatePicker("", selection: timeBinding, displayedComponents: .hourAndMinute).labelsHidden()
                         }
                     }
@@ -82,6 +98,8 @@ struct DataPlanSettings: View {
         .task { await refresh() }
         .onChange(of: network) { Task { await refresh() } }
         .onChange(of: planStart) { Task { await refresh() } }
+        .onChange(of: enabled) { Task { await refresh() } }
+        .onChange(of: dailyReminder) { Task { await refresh() } }
     }
 
     private func gbField(_ value: Binding<Double>) -> some View {
@@ -115,5 +133,7 @@ struct DataPlanSettings: View {
         let start = planStart == 0 ? Date().timeIntervalSince1970 : planStart
         used = await query.total(from: Int(start), to: Int(Date().timeIntervalSince1970),
                                  network: network.isEmpty ? nil : network)
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
+        notifDenied = settings.authorizationStatus == .denied
     }
 }

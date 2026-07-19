@@ -1,19 +1,14 @@
-//
-//  NetworkView.swift
-//  Sysline
-//
-//  The Network module's popover content.
-//
-
 import SwiftUI
 
+// The menu-bar popover: a quick glance at usage.
 struct NetworkView: View {
     @StateObject private var vm = NetworkViewModel()
     @Environment(\.openWindow) private var openWindow
     @AppStorage("showFloatingHUD") private var showHUD = false
-    @State private var showAll = false
+    @State private var since: Date?
 
-    private let collapsedCount = 8
+    private let topCount = 8
+    private let query = NetworkQuery(db: .shared)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -21,16 +16,15 @@ struct NetworkView: View {
             totalRow
             Divider()
             appList
-            if !vm.apps.isEmpty {
-                Text("Top apps").font(.caption).foregroundStyle(.secondary)
-                UsageChartView(apps: vm.topFive)
-            }
             Divider()
             footer
         }
         .padding(12)
         .frame(width: 340)
-        .onAppear { vm.reload() }
+        .onAppear {
+            vm.reload()
+            Task { since = await query.stats().since }
+        }
     }
 
     private var rangePicker: some View {
@@ -42,14 +36,19 @@ struct NetworkView: View {
     }
 
     private var totalRow: some View {
-        HStack {
-            Label(ByteFormat.string(vm.totalIn), systemImage: "arrow.down")
-                .foregroundStyle(.primary)
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 1) {
+                Text("↓ \(ByteFormat.string(vm.totalIn))")
+                    .font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.down)
+                Text("Downloaded").font(.system(size: 10)).foregroundStyle(.secondary)
+            }
             Spacer()
-            Label(ByteFormat.string(vm.totalOut), systemImage: "arrow.up")
-                .foregroundStyle(.secondary)
+            VStack(alignment: .trailing, spacing: 1) {
+                Text("↑ \(ByteFormat.string(vm.totalOut))")
+                    .font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.up)
+                Text("Uploaded").font(.system(size: 10)).foregroundStyle(.secondary)
+            }
         }
-        .font(.system(size: 15, weight: .semibold))
         .monospacedDigit()
     }
 
@@ -62,41 +61,34 @@ struct NetworkView: View {
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.vertical, 16)
         } else {
-            let shown = showAll ? vm.apps : Array(vm.apps.prefix(collapsedCount))
             VStack(spacing: 0) {
-                ForEach(shown) { AppRowView(app: $0) }
-            }
-            if vm.apps.count > collapsedCount {
-                Button(showAll ? "Show less" : "Show all (\(vm.apps.count))") {
-                    showAll.toggle()
-                }
-                .buttonStyle(.link)
-                .font(.caption)
+                ForEach(vm.apps.prefix(topCount)) { AppRowView(app: $0) }
             }
         }
     }
 
     private var footer: some View {
-        HStack {
-            Text("Recording since Jul 19")   // ponytail: wire to first sample date in Phase 3
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Spacer()
-            Menu {
-                Button("Open Sysline") { openWindow(id: "main") }
-                Toggle("Floating Monitor", isOn: Binding(
-                    get: { showHUD },
-                    set: { showHUD = $0; FloatingHUD.shared.setVisible($0) }))
-                Button("Settings…") {
-                    openWindow(id: "main")
-                    Navigation.shared.section = .settings
-                }
-                Button("Quit Sysline") { NSApplication.shared.terminate(nil) }
-            } label: {
-                Image(systemName: "gearshape")
+        HStack(spacing: 12) {
+            if let since {
+                Text("Recording since \(since.formatted(date: .abbreviated, time: .omitted))")
+                    .font(.caption).foregroundStyle(.secondary)
             }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
+            Spacer()
+            Button {
+                NSApp.activate(ignoringOtherApps: true)
+                openWindow(id: "main")
+            } label: { Image(systemName: "macwindow") }
+                .help("Open Sysline window")
+            Button {
+                NSApp.activate(ignoringOtherApps: true)
+                openWindow(id: "main")
+                Navigation.shared.section = .settings
+            } label: { Image(systemName: "gearshape") }
+                .help("Settings")
+            Button { NSApplication.shared.terminate(nil) } label: { Image(systemName: "power") }
+                .help("Quit Sysline")
         }
+        .buttonStyle(.borderless)
+        .foregroundStyle(.secondary)
     }
 }

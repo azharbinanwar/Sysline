@@ -47,7 +47,9 @@ private struct AppSettingsSection: View {
                     }
                     if showHUD {
                         Divider()
-                        SettingRow(title: "Size", indented: true) {
+                        SettingRow(title: "Size",
+                                   subtitle: "Small shows totals; larger adds top apps and a chart.",
+                                   indented: true) {
                             Picker("", selection: $hudSize) {
                                 Text("Small").tag(0); Text("Medium").tag(1); Text("Large").tag(2)
                             }
@@ -125,10 +127,14 @@ private struct NetworkSettingsSection: View {
                         }
                     }
                     if breakdown {
-                        InfoNote(systemImage: location.granted ? "checkmark.circle" : "exclamationmark.triangle",
-                                 text: location.granted
-                                    ? "Location access granted — network names will appear as new data is recorded."
-                                    : "Waiting for Location access — allow it in the prompt, or enable it in System Settings › Privacy.")
+                        if location.granted {
+                            InfoNote(systemImage: "checkmark.circle",
+                                     text: "Location access granted — network names appear as new data is recorded.")
+                        } else {
+                            PermissionBanner(text: "Location access is needed to read Wi-Fi network names.") {
+                                SystemSettings.openLocation()
+                            }
+                        }
                     }
                 }
             }
@@ -166,12 +172,16 @@ private struct NetworkSettingsSection: View {
                         .labelsHidden().frame(width: 110)
                     }
                     Divider()
-                    SettingRow(title: "Recording since", icon: "calendar") {
+                    SettingRow(title: "Recording since",
+                               subtitle: "When Sysline first started recording.",
+                               icon: "calendar") {
                         Text(since?.formatted(date: .abbreviated, time: .omitted) ?? "—")
                             .font(.system(size: 12)).foregroundStyle(.secondary)
                     }
                     Divider()
-                    SettingRow(title: "Database size", icon: "internaldrive") {
+                    SettingRow(title: "Database size",
+                               subtitle: "Disk space your saved history uses.",
+                               icon: "internaldrive") {
                         Text(ByteFormat.string(dbBytes))
                             .font(.system(size: 12)).foregroundStyle(.secondary)
                     }

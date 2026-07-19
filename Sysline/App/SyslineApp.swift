@@ -12,7 +12,7 @@ struct SyslineApp: App {
     }
 
     var body: some Scene {
-        WindowGroup("Sysline", id: "main") {
+        Window("Sysline", id: "main") {
             MainWindowView()
         }
         .defaultSize(width: 960, height: 680)
@@ -24,7 +24,7 @@ struct SyslineApp: App {
             }
         }
 
-        MenuBarExtra("Sysline", systemImage: "arrow.up.arrow.down.circle") {
+        MenuBarExtra("Sysline", image: "MenuIcon") {
             MenuContentView()
         }
         .menuBarExtraStyle(.window)

@@ -37,6 +37,7 @@ remembers, so you can answer *"which app used my data, and how much, this week?"
 - **Per-app history** — download/upload per app for Today / Yesterday / 7 / 30 days, sorted, searchable.
 - **Real app names + icons** — helper processes are folded into their parent app.
 - **Wi-Fi breakdown** — tag usage by network and filter to one (e.g. isolate your hotspot to match your carrier's count).
+- **Speed test** — a live download/upload test with a real-time gauge, ping + loaded latency, and per-activity ratings (Browsing / Gaming / Streaming / Video calls). Open it straight from the menu bar; history is kept with carrier and location. Free, uses Cloudflare's public endpoints — no account.
 - **Floating monitor** — a small always-on-top HUD with live totals, top apps, and a trend chart. Small / Medium / Large.
 - **Data-plan alerts** — set your plan limit + a "notify me at" value, get one alert when you cross it. Plus an optional daily usage reminder.
 - **Light on resources** — ~0% CPU and near-zero energy at idle. Everything stays on your Mac.
@@ -59,9 +60,11 @@ Check for Updates** inside the app.
 
 ## Screenshots
 
-| Menu bar popover | Floating monitor | Data-plan alerts |
-|---|---|---|
-| <img src="docs/popover.png" width="260"> | <img src="docs/hud.png" width="260"> | <img src="docs/dataplan.png" width="260"> |
+| Menu bar popover | Floating monitor | Data-plan alerts | Speed test |
+|---|---|---|---|
+| <img src="docs/popover.png" width="240"> | <img src="docs/hud.png" width="240"> | <img src="docs/dataplan.png" width="240"> | <img src="docs/speed-test.png" width="240"> |
+
+<div align="center"><img src="docs/speed.png" width="800" alt="Speed history"></div>
 
 <div align="center"><img src="docs/settings.png" width="640" alt="Settings"></div>
 

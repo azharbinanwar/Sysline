@@ -41,6 +41,7 @@ final class SpeedTester: NSObject, ObservableObject {
 
     private let counter = Counter()
     private var session: URLSession!
+    private var pingSession: URLSession!
     private var phaseStart = Date()
     private var probing = false
     private var streaming = false
@@ -54,6 +55,12 @@ final class SpeedTester: NSObject, ObservableObject {
         note = nil; lastError = nil
 
         session = URLSession(configuration: .ephemeral, delegate: self, delegateQueue: nil)
+
+        // Dedicated session for pings to avoid head-of-line blocking by heavy transfers
+        let pingConfig = URLSessionConfiguration.ephemeral
+        pingConfig.timeoutIntervalForRequest = 2.0
+        pingConfig.timeoutIntervalForResource = 2.0
+        pingSession = URLSession(configuration: pingConfig)
 
         phase = .ping
         let ping = await idleLatency()
@@ -69,8 +76,7 @@ final class SpeedTester: NSObject, ObservableObject {
         downMbps = finalMbps(); downLatency = await dLat.value
         if downMbps < 0.5 { note = lastError ?? "Download failed — server unreachable" }
 
-        mbps = 0                                             // sweep the dial back to zero…
-        try? await Task.sleep(for: .milliseconds(450))       // …before the upload run climbs
+        await glideToZero()                                  // smoothly sweep the dial back to zero…
 
         phase = .upload
         probing = true
@@ -82,7 +88,7 @@ final class SpeedTester: NSObject, ObservableObject {
         probing = false
         upMbps = finalMbps(); upLatency = await uLat.value
 
-        mbps = 0                                             // return the dial to zero
+        await glideToZero()                                  // return the dial to zero smoothly
         phase = .done
         session.invalidateAndCancel()
 
@@ -101,10 +107,33 @@ final class SpeedTester: NSObject, ObservableObject {
         tasks = (0..<streams).map { _ in make() }
         tasks.forEach { $0.resume() }
 
+        var windowBytes: [(Date, Int)] = []
         let ticker = Task { @MainActor in
             while streaming {
                 try? await Task.sleep(for: .milliseconds(100))
-                mbps = finalMbps()
+                let now = Date()
+                let total = counter.value
+                windowBytes.append((now, total))
+                
+                // Increase window to 1.5s to better average out bursty uploads
+                windowBytes = windowBytes.filter { now.timeIntervalSince($0.0) <= 1.5 }
+                
+                if windowBytes.count >= 2 {
+                    let first = windowBytes.first!
+                    let last = windowBytes.last!
+                    let dt = last.0.timeIntervalSince(first.0)
+                    let db = last.1 - first.1
+                    
+                    // Only update if we have enough time passed to avoid noise
+                    if dt > 0.2 {
+                        let rawMbps = Double(db) * 8 / dt / 1_000_000
+                        
+                        // Heavier smoothing (lower alpha) for a fluid needle
+                        // Especially helpful for uploads which send in larger, less frequent bursts
+                        let alpha = 0.15 
+                        self.mbps = (alpha * rawMbps) + ((1.0 - alpha) * self.mbps)
+                    }
+                }
             }
         }
 
@@ -123,12 +152,21 @@ final class SpeedTester: NSObject, ObservableObject {
         return e > 0.05 ? Double(counter.value) * 8 / e / 1_000_000 : mbps
     }
 
+    private func glideToZero() async {
+        // Decelerate the needle smoothly instead of jumping to 0
+        while mbps > 0.5 {
+            try? await Task.sleep(for: .milliseconds(25))
+            mbps *= 0.85
+        }
+        mbps = 0
+    }
+
     // Small pings on a plain session so they don't feed the delegate byte counter.
     private func idleLatency() async -> (median: Int, jitter: Int) {
         var lat: [Double] = []
         for _ in 0..<3 {
             let s = Date()
-            _ = try? await URLSession.shared.data(from: pingURL)
+            _ = try? await pingSession.data(from: pingURL)
             lat.append(Date().timeIntervalSince(s) * 1000)
         }
         guard !lat.isEmpty else { return (0, 0) }
@@ -142,7 +180,7 @@ final class SpeedTester: NSObject, ObservableObject {
         var lat: [Double] = []
         while probing {
             let s = Date()
-            _ = try? await URLSession.shared.data(from: pingURL)
+            _ = try? await pingSession.data(from: pingURL)
             lat.append(Date().timeIntervalSince(s) * 1000)
             try? await Task.sleep(for: .milliseconds(280))
         }
@@ -167,12 +205,24 @@ extension SpeedTester: URLSessionDataDelegate {
         let cancelled = (error as? URLError)?.code == .cancelled
         let status = (task.response as? HTTPURLResponse)?.statusCode ?? 0
         let ok = error == nil && status == 200
+        let isRateLimit = status == 429
+        
         let message: String? = cancelled ? nil
             : error?.localizedDescription ?? (status != 200 ? "Server busy (HTTP \(status))" : nil)
+            
         Task { @MainActor in
             if let message { self.lastError = message }
-            guard self.streaming, ok, let make = self.makeTask else { return }
-            let t = make(); self.tasks.append(t); t.resume()
+            guard self.streaming, let make = self.makeTask else { return }
+            
+            if ok {
+                let t = make(); self.tasks.append(t); t.resume()
+            } else if isRateLimit {
+                // Back off slightly on 429
+                try? await Task.sleep(for: .milliseconds(500))
+                if self.streaming {
+                    let t = make(); self.tasks.append(t); t.resume()
+                }
+            }
         }
     }
 }

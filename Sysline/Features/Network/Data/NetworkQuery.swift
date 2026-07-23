@@ -7,45 +7,87 @@ struct NetworkQuery {
 
     func usage(_ range: DateRange, network: String?) async -> [AppUsage] {
         let (start, end) = range.bounds()
-        let table = range.usesRawSamples ? "network_samples" : "network_hourly"
-        let inCol = range.usesRawSamples ? "bytes_in_delta" : "bytes_in"
-        let outCol = range.usesRawSamples ? "bytes_out_delta" : "bytes_out"
-        let timeCol = range.usesRawSamples ? "ts" : "hour_start"
+        // Threshold: use raw samples for the last 24 hours to ensure max accuracy
+        // and include data not yet rolled up. Everything older comes from hourly.
+        let rawThreshold = Int(Date().timeIntervalSince1970) - 24 * 3600
+        let mid = max(start, rawThreshold)
 
-        var sql = "SELECT bundle_id, MAX(app_name), SUM(\(inCol)), SUM(\(outCol)) FROM \(table) WHERE \(timeCol) >= ? AND \(timeCol) < ?"
-        var params: [SQLValue] = [.int(Int64(start)), .int(Int64(end))]
-        if let network { sql += " AND network = ?"; params.append(.text(network)) }
-        sql += " GROUP BY bundle_id"
+        var allRows: [[SQLValue]] = []
 
-        let rows = (try? await db.query(sql, params)) ?? []
-        return rows
-            .compactMap { r -> AppUsage? in
-                guard r.count >= 4 else { return nil }
-                return AppUsage(bundleID: r[0].textValue, name: r[1].textValue,
-                                bytesIn: r[2].intValue, bytesOut: r[3].intValue)
+        // 1. History from hourly table
+        if start < mid {
+            var sql = "SELECT bundle_id, MAX(app_name), SUM(bytes_in), SUM(bytes_out) FROM network_hourly WHERE hour_start >= ? AND hour_start < ?"
+            var params: [SQLValue] = [.int(Int64(start)), .int(Int64(mid))]
+            if let network { sql += " AND network = ?"; params.append(.text(network)) }
+            sql += " GROUP BY bundle_id"
+            allRows.append(contentsOf: (try? await db.query(sql, params)) ?? [])
+        }
+
+        // 2. Recent from raw samples
+        if mid < end {
+            var sql = "SELECT bundle_id, MAX(app_name), SUM(bytes_in_delta), SUM(bytes_out_delta) FROM network_samples WHERE ts >= ? AND ts < ?"
+            var params: [SQLValue] = [.int(Int64(mid)), .int(Int64(end))]
+            if let network { sql += " AND network = ?"; params.append(.text(network)) }
+            sql += " GROUP BY bundle_id"
+            allRows.append(contentsOf: (try? await db.query(sql, params)) ?? [])
+        }
+
+        // 3. Aggregate
+        var combined: [String: AppUsage] = [:]
+        for r in allRows {
+            guard r.count >= 4 else { continue }
+            let bid = r[0].textValue
+            let name = r[1].textValue
+            let i = r[2].intValue
+            let o = r[3].intValue
+            if let existing = combined[bid] {
+                combined[bid] = AppUsage(bundleID: bid, name: name, bytesIn: existing.bytesIn + i, bytesOut: existing.bytesOut + o)
+            } else {
+                combined[bid] = AppUsage(bundleID: bid, name: name, bytesIn: i, bytesOut: o)
             }
-            .sorted { $0.total > $1.total }
+        }
+
+        return combined.values.sorted { $0.total > $1.total }
     }
 
     func trend(_ range: DateRange, network: String?) async -> [UsagePoint] {
         let (start, end) = range.bounds()
-        let raw = range.usesRawSamples
-        let table = raw ? "network_samples" : "network_hourly"
-        let inCol = raw ? "bytes_in_delta" : "bytes_in"
-        let outCol = raw ? "bytes_out_delta" : "bytes_out"
-        let timeCol = raw ? "ts" : "hour_start"
-        let bucket = raw ? 3600 : 86400   // hourly points for days, daily for weeks/months
+        let rawThreshold = Int(Date().timeIntervalSince1970) - 24 * 3600
+        let mid = max(start, rawThreshold)
+        let bucket = range.usesRawSamples ? 3600 : 86400
 
-        var sql = "SELECT (\(timeCol)/\(bucket))*\(bucket) AS b, SUM(\(inCol)), SUM(\(outCol)) FROM \(table) WHERE \(timeCol) >= ? AND \(timeCol) < ?"
-        var params: [SQLValue] = [.int(Int64(start)), .int(Int64(end))]
-        if let network { sql += " AND network = ?"; params.append(.text(network)) }
-        sql += " GROUP BY b ORDER BY b"
+        var allRows: [[SQLValue]] = []
 
-        let rows = (try? await db.query(sql, params)) ?? []
-        return rows.compactMap { r -> UsagePoint? in
-            guard r.count >= 3 else { return nil }
-            return UsagePoint(date: Date(timeIntervalSince1970: TimeInterval(r[0].intValue)),
-                              bytesIn: r[1].intValue, bytesOut: r[2].intValue)
+        if start < mid {
+            var sql = "SELECT (hour_start/\(bucket))*\(bucket) AS b, SUM(bytes_in), SUM(bytes_out) FROM network_hourly WHERE hour_start >= ? AND hour_start < ?"
+            var params: [SQLValue] = [.int(Int64(start)), .int(Int64(mid))]
+            if let network { sql += " AND network = ?"; params.append(.text(network)) }
+            sql += " GROUP BY b"
+            allRows.append(contentsOf: (try? await db.query(sql, params)) ?? [])
+        }
+
+        if mid < end {
+            var sql = "SELECT (ts/\(bucket))*\(bucket) AS b, SUM(bytes_in_delta), SUM(bytes_out_delta) FROM network_samples WHERE ts >= ? AND ts < ?"
+            var params: [SQLValue] = [.int(Int64(mid)), .int(Int64(end))]
+            if let network { sql += " AND network = ?"; params.append(.text(network)) }
+            sql += " GROUP BY b"
+            allRows.append(contentsOf: (try? await db.query(sql, params)) ?? [])
+        }
+
+        var combined: [Int: (inB: Int, outB: Int)] = [:]
+        for r in allRows {
+            guard r.count >= 3 else { continue }
+            let b = r[0].intValue
+            let i = r[1].intValue
+            let o = r[2].intValue
+            let existing = combined[b] ?? (0, 0)
+            combined[b] = (existing.inB + i, existing.outB + o)
+        }
+
+        return combined.keys.sorted().compactMap { b in
+            let vals = combined[b]!
+            return UsagePoint(date: Date(timeIntervalSince1970: TimeInterval(b)),
+                              bytesIn: vals.inB, bytesOut: vals.outB)
         }
     }
 
@@ -56,18 +98,28 @@ struct NetworkQuery {
 
     // Total bytes over an arbitrary window — used by reminders/budgets.
     func total(from start: Int, to end: Int, network: String?) async -> Int {
-        let raw = start >= Int(Date().timeIntervalSince1970) - Constants.Retention.rawSampleHours * 3600
-        let table = raw ? "network_samples" : "network_hourly"
-        let inCol = raw ? "bytes_in_delta" : "bytes_in"
-        let outCol = raw ? "bytes_out_delta" : "bytes_out"
-        let timeCol = raw ? "ts" : "hour_start"
+        let rawThreshold = Int(Date().timeIntervalSince1970) - 24 * 3600
+        let mid = max(start, rawThreshold)
 
-        var sql = "SELECT SUM(\(inCol)) + SUM(\(outCol)) FROM \(table) WHERE \(timeCol) >= ? AND \(timeCol) < ?"
-        var params: [SQLValue] = [.int(Int64(start)), .int(Int64(end))]
-        if let network { sql += " AND network = ?"; params.append(.text(network)) }
+        var total = 0
 
-        let rows = (try? await db.query(sql, params)) ?? []
-        return rows.first?.first?.intValue ?? 0
+        if start < mid {
+            var sql = "SELECT SUM(bytes_in) + SUM(bytes_out) FROM network_hourly WHERE hour_start >= ? AND hour_start < ?"
+            var params: [SQLValue] = [.int(Int64(start)), .int(Int64(mid))]
+            if let network { sql += " AND network = ?"; params.append(.text(network)) }
+            let rows = (try? await db.query(sql, params)) ?? []
+            total += rows.first?.first?.intValue ?? 0
+        }
+
+        if mid < end {
+            var sql = "SELECT SUM(bytes_in_delta) + SUM(bytes_out_delta) FROM network_samples WHERE ts >= ? AND ts < ?"
+            var params: [SQLValue] = [.int(Int64(mid)), .int(Int64(end))]
+            if let network { sql += " AND network = ?"; params.append(.text(network)) }
+            let rows = (try? await db.query(sql, params)) ?? []
+            total += rows.first?.first?.intValue ?? 0
+        }
+
+        return total
     }
 
     func stats() async -> (since: Date?, dbBytes: Int) {

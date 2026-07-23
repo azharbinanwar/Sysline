@@ -14,18 +14,27 @@ actor NetworkPoller {
             let key = Key(pid: s.pid, name: s.name)
             seen.insert(key)
 
-            let dIn: Int, dOut: Int
-            if let base = baselines[key] {
-                let ri = s.bytesIn - base.inB
-                let ro = s.bytesOut - base.outB
-                // On a decrease (counter reset / pid churn / jitter) re-baseline and
-                // count 0. Adding the full current value here caused large over-counts.
-                dIn  = ri < 0 ? 0 : ri
-                dOut = ro < 0 ? 0 : ro
+            var base = baselines[key] ?? (inB: s.bytesIn, outB: s.bytesOut)
+            let dIn: Int
+            if s.bytesIn >= base.inB {
+                dIn = s.bytesIn - base.inB
+                base.inB = s.bytesIn
+            } else if s.bytesIn > 0 {
+                dIn = 0; base.inB = s.bytesIn   // counter reset → re-baseline
             } else {
-                dIn = 0; dOut = 0                  // first sighting → baseline only
+                dIn = 0                         // jitter (0) → ignore, keep old baseline
             }
-            baselines[key] = (s.bytesIn, s.bytesOut)
+
+            let dOut: Int
+            if s.bytesOut >= base.outB {
+                dOut = s.bytesOut - base.outB
+                base.outB = s.bytesOut
+            } else if s.bytesOut > 0 {
+                dOut = 0; base.outB = s.bytesOut
+            } else {
+                dOut = 0
+            }
+            baselines[key] = base
 
             if dIn > 0 || dOut > 0 {
                 deltas.append(RawDelta(name: s.name, pid: s.pid,
@@ -54,8 +63,14 @@ extension NetworkPoller {
             d = await p.computeDeltas(s(150, 15))
             assert(d.first?.bytesInDelta == 50 && d.first?.bytesOutDelta == 5, "normal delta")
 
+            d = await p.computeDeltas(s(0, 0))
+            assert(d.isEmpty, "jitter to 0 -> ignore")
+
+            d = await p.computeDeltas(s(160, 18))
+            assert(d.first?.bytesInDelta == 10 && d.first?.bytesOutDelta == 3, "resumes from old baseline after jitter")
+
             d = await p.computeDeltas(s(20, 2))
-            assert(d.isEmpty, "counter reset → 0, re-baseline (no spike)")
+            assert(d.isEmpty, "counter reset to positive value -> re-baseline (no spike)")
 
             d = await p.computeDeltas(s(30, 5))
             assert(d.first?.bytesInDelta == 10 && d.first?.bytesOutDelta == 3, "delta resumes from new baseline")

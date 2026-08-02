@@ -13,14 +13,21 @@ enum DateRange: String, CaseIterable, Identifiable, Sendable {
     case yesterday = "Yesterday"
     case week = "7 Days"
     case month = "30 Days"
+    case quarter = "90 Days"
+    case all = "All"
 
     var id: String { rawValue }
 
-    // Cycle to the next range (wraps) — used by tap-to-swap controls.
+    // The single source of truth for which surfaces show which ranges:
+    // glance surfaces (menu-bar popover, floating HUD) stay light; the main
+    // window offers every case including the long, heavier ranges.
+    static let glance: [DateRange] = [.today, .yesterday, .week, .month]
+
+    // Cycle to the next glance range (wraps) — used by the HUD's tap-to-swap.
     var next: DateRange {
-        let all = Self.allCases
-        let i = all.firstIndex(of: self) ?? 0
-        return all[(i + 1) % all.count]
+        let ranges = Self.glance
+        let index = ranges.firstIndex(of: self) ?? 0
+        return ranges[(index + 1) % ranges.count]
     }
 
     // Today/Yesterday are within raw-sample retention; longer ranges use hourly.
@@ -42,6 +49,11 @@ enum DateRange: String, CaseIterable, Identifiable, Sendable {
         case .month:
             let s = calendar.date(byAdding: .day, value: -30, to: startToday) ?? startToday
             return (e(s), e(now))
+        case .quarter:
+            let s = calendar.date(byAdding: .day, value: -90, to: startToday) ?? startToday
+            return (e(s), e(now))
+        case .all:
+            return (0, e(now))
         }
     }
 }

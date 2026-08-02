@@ -30,7 +30,7 @@ struct NetworkView: View {
 
     private var rangePicker: some View {
         Picker("", selection: $vm.range) {
-            ForEach(DateRange.allCases) { Text($0.rawValue).tag($0) }
+            ForEach(DateRange.glance) { Text($0.rawValue).tag($0) }
         }
         .pickerStyle(.segmented)
         .labelsHidden()

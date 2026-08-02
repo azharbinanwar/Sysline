@@ -77,7 +77,7 @@ struct DataPlanSettings: View {
             SettingGroup("Daily Reminder") {
                 VStack(spacing: 10) {
                     SettingRow(title: "Daily usage reminder",
-                               subtitle: "A notification every day at a time you pick.",
+                               subtitle: "Each day's total, delivered the next morning at a time you pick.",
                                icon: "clock") {
                         SwitchToggle(isOn: dailyReminder) { on in
                             dailyReminder = on

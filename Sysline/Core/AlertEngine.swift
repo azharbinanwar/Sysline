@@ -39,9 +39,14 @@ final class AlertEngine {
                 if let fireAt = Calendar.current.date(bySettingHour: hour, minute: minute, second: 0, of: now),
                    now >= fireAt {
                     d.set(today, forKey: "lastDaily")
-                    let used = await query.usage(.today, network: networkFilter).reduce(0) { $0 + $1.total }
-                    Notifier.send(id: "daily-\(today)", title: "Today's usage",
-                                  body: "You've used \(ByteFormat.string(used)) today.")
+                    let apps = await query.usage(.yesterday, network: networkFilter)
+                    let down = apps.reduce(0) { $0 + $1.bytesIn }
+                    let up = apps.reduce(0) { $0 + $1.bytesOut }
+                    let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: now) ?? now
+                    let formatter = DateFormatter()
+                    formatter.dateFormat = "EEEE, MMM d"
+                    Notifier.send(id: "daily-\(today)", title: "Daily usage report",
+                                  body: "\(formatter.string(from: yesterday)): ↓ \(ByteFormat.string(down))  ↑ \(ByteFormat.string(up))")
                 }
             }
         }

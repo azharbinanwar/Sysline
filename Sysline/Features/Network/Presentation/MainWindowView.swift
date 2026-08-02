@@ -4,6 +4,15 @@ struct MainWindowView: View {
     @StateObject private var vm = NetworkViewModel()
     @ObservedObject private var nav = Navigation.shared
     @AppStorage("theme") private var theme = 0
+    @State private var windowWidth: CGFloat = 1000
+
+    // Each toolbar control compacts ITSELF as the window narrows, with wide
+    // safety margins so AppKit's » overflow can never trigger:
+    //   ≥ 1350  full segmented bar + wifi icon with network name + labels
+    //   ≥ 1050  full segmented bar + wifi icon only
+    //   below   compact range dropdown + wifi icon only
+    private static let wifiLabelMinWidth: CGFloat = 1350
+    private static let segmentedMinWidth: CGFloat = 1050
 
     var body: some View {
         NavigationSplitView {
@@ -16,10 +25,30 @@ struct MainWindowView: View {
         } detail: {
             detail
         }
-        .frame(minWidth: 760, minHeight: 480)
+        // Min width sized so even the expanded search field plus the compact
+        // controls always fit — the toolbar's » overflow must never trigger.
+        .frame(minWidth: 880, minHeight: 480)
+        .background(GeometryReader { proxy in
+            Color.clear
+                .onAppear { windowWidth = proxy.size.width }
+                .onChange(of: proxy.size.width) { windowWidth = proxy.size.width }
+        })
         .preferredColorScheme(Theme.colorScheme(theme))
         .onAppear { vm.setActive(true) }
         .onDisappear { vm.setActive(false) }
+    }
+
+    private var rangePicker: some View {
+        Picker("Range", selection: $vm.range) {
+            ForEach(DateRange.allCases) { Text($0.rawValue).tag($0) }
+        }
+        .fixedSize()
+    }
+
+    // Menu checkmark binding: the chosen network reads as checked.
+    private func networkChoice(_ network: String?) -> Binding<Bool> {
+        Binding(get: { vm.networkFilter == network },
+                set: { if $0 { vm.networkFilter = network } })
     }
 
     @ViewBuilder
@@ -36,26 +65,37 @@ struct MainWindowView: View {
                 .searchable(text: $vm.searchText, placement: .toolbar, prompt: "Search apps")
                 .toolbar {
                     ToolbarItem(placement: .principal) {
-                        Picker("Range", selection: $vm.range) {
-                            ForEach(DateRange.allCases) { Text($0.rawValue).tag($0) }
+                        if windowWidth >= Self.segmentedMinWidth {
+                            rangePicker.pickerStyle(.segmented)
+                        } else {
+                            rangePicker.pickerStyle(.menu)
                         }
-                        .pickerStyle(.segmented)
-                        .fixedSize()
                     }
                     ToolbarItemGroup(placement: .primaryAction) {
                         Menu {
-                            Button("All Networks") { vm.networkFilter = nil }
+                            Toggle("All Networks", isOn: networkChoice(nil))
                             if !vm.networks.isEmpty {
                                 Divider()
                                 ForEach(vm.networks, id: \.self) { net in
-                                    Button(net) { vm.networkFilter = net }
+                                    Toggle(net, isOn: networkChoice(net))
                                 }
                             }
                         } label: {
-                            Label(vm.networkFilter ?? "All Networks", systemImage: "wifi")
-                                .labelStyle(.titleAndIcon)
+                            if windowWidth >= Self.wifiLabelMinWidth {
+                                Label(vm.networkFilter ?? "All Networks", systemImage: "wifi")
+                                    .labelStyle(.titleAndIcon)
+                            } else {
+                                Image(systemName: "wifi")
+                            }
                         }
-                        Button { vm.reload() } label: { Image(systemName: "arrow.clockwise") }
+                        Button { vm.reload() } label: {
+                            if windowWidth >= Self.wifiLabelMinWidth {
+                                Label("Refresh", systemImage: "arrow.clockwise")
+                                    .labelStyle(.titleAndIcon)
+                            } else {
+                                Label("Refresh", systemImage: "arrow.clockwise")
+                            }
+                        }
                     }
                 }
         }

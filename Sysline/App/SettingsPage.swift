@@ -62,7 +62,7 @@ private struct AppSettingsSection: View {
                                    indented: true) {
                             SwitchToggle(isOn: hudOnTop) { on in
                                 hudOnTop = on
-                                FloatingHUD.shared.applyLevel()
+                                FloatingHUD.shared.reload()
                             }
                         }
                     }

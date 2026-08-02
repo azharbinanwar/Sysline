@@ -33,10 +33,6 @@ enum Constants {
         }
     }
 
-    enum Poll {
-        static let interval: TimeInterval = 5   // seconds
-    }
-
     /// Retention windows. Raw samples get rolled up hourly, then pruned.
     enum Retention {
         static let rawSampleHours = 48

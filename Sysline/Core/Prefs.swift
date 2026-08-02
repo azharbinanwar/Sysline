@@ -14,9 +14,6 @@ enum Prefs {
     static var showFloatingHUD: Bool { d.bool(forKey: "showFloatingHUD") }
     static var hudSize: Int { d.integer(forKey: "hudSize") }   // 0 small, 1 medium, 2 large
     static var hudOnTop: Bool { d.object(forKey: "hudOnTop") == nil ? true : d.bool(forKey: "hudOnTop") }
-    static var alertsEnabled: Bool { d.bool(forKey: "alertsEnabled") }
-    static var dailySummary: Bool { d.bool(forKey: "dailySummary") }
-    static var newNetworkAlert: Bool { d.bool(forKey: "newNetworkAlert") }
     // Off by default: menu-bar-only, no Dock burden. Users can opt into a Dock icon.
     static var showDockIcon: Bool { d.bool(forKey: "showDockIcon") }
 }

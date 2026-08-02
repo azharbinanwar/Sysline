@@ -9,7 +9,9 @@ struct NetworkQuery {
         let (start, end) = range.bounds()
         // Threshold: use raw samples for the last 24 hours to ensure max accuracy
         // and include data not yet rolled up. Everything older comes from hourly.
-        let rawThreshold = Int(Date().timeIntervalSince1970) - 24 * 3600
+        // Hour-aligned so the hourly and raw queries never overlap on the
+        // boundary bucket (mid-hour split double-counts that hour).
+        let rawThreshold = (Int(Date().timeIntervalSince1970) - 24 * 3600) / 3600 * 3600
         let mid = max(start, rawThreshold)
 
         var allRows: [[SQLValue]] = []
@@ -52,7 +54,9 @@ struct NetworkQuery {
 
     func trend(_ range: DateRange, network: String?) async -> [UsagePoint] {
         let (start, end) = range.bounds()
-        let rawThreshold = Int(Date().timeIntervalSince1970) - 24 * 3600
+        // Hour-aligned so the hourly and raw queries never overlap on the
+        // boundary bucket (mid-hour split double-counts that hour).
+        let rawThreshold = (Int(Date().timeIntervalSince1970) - 24 * 3600) / 3600 * 3600
         let mid = max(start, rawThreshold)
         let bucket = range.usesRawSamples ? 3600 : 86400
 
@@ -98,7 +102,9 @@ struct NetworkQuery {
 
     // Total bytes over an arbitrary window — used by reminders/budgets.
     func total(from start: Int, to end: Int, network: String?) async -> Int {
-        let rawThreshold = Int(Date().timeIntervalSince1970) - 24 * 3600
+        // Hour-aligned so the hourly and raw queries never overlap on the
+        // boundary bucket (mid-hour split double-counts that hour).
+        let rawThreshold = (Int(Date().timeIntervalSince1970) - 24 * 3600) / 3600 * 3600
         let mid = max(start, rawThreshold)
 
         var total = 0

@@ -23,8 +23,10 @@ struct NetworkStore {
             SELECT (ts/3600)*3600, bundle_id, MAX(app_name), network, SUM(bytes_in_delta), SUM(bytes_out_delta)
             FROM network_samples GROUP BY 1, bundle_id, network
             """)
-        try? await db.run("DELETE FROM network_samples WHERE ts < ?",
-                          [.int(Int64(now - Constants.Retention.rawSampleHours * 3600))])
+        // Prune on an hour boundary: a mid-hour cut would make the next rollup
+        // recompute that bucket from partial samples and permanently truncate it.
+        let rawCutoff = (now - Constants.Retention.rawSampleHours * 3600) / 3600 * 3600
+        try? await db.run("DELETE FROM network_samples WHERE ts < ?", [.int(Int64(rawCutoff))])
         try? await db.run("DELETE FROM network_hourly WHERE hour_start < ?",
                           [.int(Int64(now - Prefs.retentionDays * 86400))])
     }

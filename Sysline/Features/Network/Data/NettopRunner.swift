@@ -10,14 +10,25 @@ struct NettopRunner: Sendable {
             process.arguments = ["-P", "-L", "1", "-x", "-J", "bytes_in,bytes_out"]
             let pipe = Pipe()
             process.standardOutput = pipe
-            process.standardError = Pipe()
+            // Discard stderr: an unread stderr pipe that fills up would block
+            // nettop forever, and this loop with it.
+            process.standardError = FileHandle.nullDevice
             do {
                 try process.run()
             } catch {
                 return nil
             }
+            // Watchdog: a wedged nettop must not halt recording until relaunch.
+            let watchdog = Task.detached {
+                try? await Task.sleep(for: .seconds(10))
+                if process.isRunning { process.terminate() }
+            }
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
             process.waitUntilExit()
+            watchdog.cancel()
+            guard process.terminationReason == .exit, process.terminationStatus == 0 else {
+                return nil   // killed or failed → partial output, skip this poll
+            }
             return String(data: data, encoding: .utf8)
         }.value
     }

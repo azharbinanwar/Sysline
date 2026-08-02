@@ -7,6 +7,9 @@ actor NetworkPoller {
     private var baselines: [Key: (inB: Int, outB: Int)] = [:]
 
     func computeDeltas(_ samples: [ProcessSample]) -> [RawDelta] {
+        // One empty read (nettop hiccup) must not wipe every baseline —
+        // that would silently lose all traffic across two poll intervals.
+        guard !samples.isEmpty else { return [] }
         var deltas: [RawDelta] = []
         var seen = Set<Key>()
 
@@ -77,6 +80,12 @@ extension NetworkPoller {
 
             d = await p.computeDeltas([ProcessSample(name: "b", pid: 1, bytesIn: 500, bytesOut: 5)])
             assert(d.isEmpty, "pid reuse with new name is a fresh baseline")
+
+            d = await p.computeDeltas([])
+            assert(d.isEmpty, "empty read emits nothing")
+            d = await p.computeDeltas([ProcessSample(name: "b", pid: 1, bytesIn: 600, bytesOut: 10)])
+            assert(d.first?.bytesInDelta == 100 && d.first?.bytesOutDelta == 5,
+                   "empty read keeps baselines — delta resumes, not re-baselined")
 
             let ps = NettopParser.parse(",bytes_in,bytes_out,\ncom.apple.WebKit.Networking.881,1000,200,\n")
             assert(ps.count == 1 && ps[0].pid == 881 && ps[0].name == "com.apple.WebKit.Networking"

@@ -37,9 +37,10 @@ final class PollScheduler {
         let ts = Int(Date().timeIntervalSince1970)
         let deltas = raw.map { r -> SampleDelta in
             let app = AppResolver.resolve(pid: r.pid)
+            let processName = r.name.isEmpty ? nil : r.name
             return SampleDelta(ts: ts,
-                               bundleID: app?.bundleID ?? AppIcon.otherBundleID,
-                               appName: app?.name ?? "Other processes",
+                               bundleID: app?.bundleID ?? processName.map { "process.\($0)" } ?? AppIcon.otherBundleID,
+                               appName: app?.name ?? processName ?? "Other processes",
                                pid: r.pid, network: network,
                                bytesInDelta: r.bytesInDelta, bytesOutDelta: r.bytesOutDelta)
         }

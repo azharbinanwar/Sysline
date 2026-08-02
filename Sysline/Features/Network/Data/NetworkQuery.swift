@@ -58,12 +58,19 @@ struct NetworkQuery {
         // boundary bucket (mid-hour split double-counts that hour).
         let rawThreshold = (Int(Date().timeIntervalSince1970) - 24 * 3600) / 3600 * 3600
         let mid = max(start, rawThreshold)
-        let bucket = range.usesRawSamples ? 3600 : 86400
+        // Hour bars: plain hour buckets. Day bars: bucket at the *local*
+        // midnight of the Mac's current timezone (DST-correct per date) —
+        // (ts/86400)*86400 would cut days at UTC midnight instead.
+        func bucketExpression(_ column: String) -> String {
+            range.usesRawSamples
+                ? "(\(column)/3600)*3600"
+                : "CAST(strftime('%s', date(\(column),'unixepoch','localtime'), 'utc') AS INTEGER)"
+        }
 
         var allRows: [[SQLValue]] = []
 
         if start < mid {
-            var sql = "SELECT (hour_start/\(bucket))*\(bucket) AS b, SUM(bytes_in), SUM(bytes_out) FROM network_hourly WHERE hour_start >= ? AND hour_start < ?"
+            var sql = "SELECT \(bucketExpression("hour_start")) AS b, SUM(bytes_in), SUM(bytes_out) FROM network_hourly WHERE hour_start >= ? AND hour_start < ?"
             var params: [SQLValue] = [.int(Int64(start)), .int(Int64(mid))]
             if let network { sql += " AND network = ?"; params.append(.text(network)) }
             sql += " GROUP BY b"
@@ -71,7 +78,7 @@ struct NetworkQuery {
         }
 
         if mid < end {
-            var sql = "SELECT (ts/\(bucket))*\(bucket) AS b, SUM(bytes_in_delta), SUM(bytes_out_delta) FROM network_samples WHERE ts >= ? AND ts < ?"
+            var sql = "SELECT \(bucketExpression("ts")) AS b, SUM(bytes_in_delta), SUM(bytes_out_delta) FROM network_samples WHERE ts >= ? AND ts < ?"
             var params: [SQLValue] = [.int(Int64(mid)), .int(Int64(end))]
             if let network { sql += " AND network = ?"; params.append(.text(network)) }
             sql += " GROUP BY b"

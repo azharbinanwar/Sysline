@@ -21,6 +21,9 @@ All notable changes to Sysline. Unreleased items ship with the next version.
 - The floating HUD remembers its position across size changes and relaunches.
 
 ### Changed
+- Redesigned the speed test: a speedometer with a real tick scale up to
+  1000 Mbps (log-style, so slow speeds stay readable), a peak marker, and a
+  Download/Upload/Ping stat row. The old 0–100 dial pegged on fast lines.
 - Unknown processes are recorded by their real name (e.g. `adb`) instead of
   all lumping into "Other processes".
 - The daily notification now reports the previous day with date and

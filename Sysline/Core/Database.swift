@@ -14,19 +14,46 @@ enum DBError: Error { case open(String), prepare(String), step(String), exec(Str
 
 // Thin SQLite wrapper. An actor so all access is serialized on one connection.
 actor Database {
-    static let shared = try! Database()
+    static let shared = Database.openWithRecovery()
 
     private let handle: OpaquePointer?
     private let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
-    init(path: URL = Constants.Database.fileURL) throws {
+    init(path: String = Constants.Database.fileURL.path) throws {
         var h: OpaquePointer?
-        guard sqlite3_open(path.path, &h) == SQLITE_OK else {
-            throw DBError.open(String(cString: sqlite3_errmsg(h)))
+        guard sqlite3_open(path, &h) == SQLITE_OK else {
+            let message = String(cString: sqlite3_errmsg(h))
+            sqlite3_close(h)   // SQLite hands back a handle even on failure
+            throw DBError.open(message)
+        }
+        do {
+            try Database.exec(h, "PRAGMA journal_mode = WAL;")   // fails on a corrupt file
+            try Database.exec(h, Database.schemaSQL)
+        } catch {
+            sqlite3_close(h)
+            throw error
         }
         handle = h
-        try Database.exec(h, "PRAGMA journal_mode = WAL;")
-        try Database.exec(h, Database.schemaSQL)
+    }
+
+    // Never crash-loops and never deletes data: a file that won't open is
+    // renamed aside (with its WAL sidecars) and a fresh database is created.
+    // Last resort (disk unwritable): an in-memory DB so the app still runs.
+    static func openWithRecovery(path: String = Constants.Database.fileURL.path) -> Database {
+        if let database = try? Database(path: path) { return database }
+        setAside(path: path)
+        if let database = try? Database(path: path) { return database }
+        return try! Database(path: ":memory:")   // only fails on out-of-memory
+    }
+
+    private static func setAside(path: String) {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMdd-HHmmss"
+        let stamp = formatter.string(from: Date())
+        for suffix in ["", "-wal", "-shm"] {
+            try? FileManager.default.moveItem(atPath: path + suffix,
+                                              toPath: path + suffix + ".corrupt-" + stamp)
+        }
     }
 
     func run(_ sql: String, _ params: [SQLValue] = []) throws {

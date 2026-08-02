@@ -13,9 +13,10 @@ enum Constants {
         static let name = "Sysline"
     }
 
-    /// Database config. To reset during development:
-    ///   • bump `schemaVersion` → triggers a migration/reset, or
-    ///   • change `name`        → fresh file, old one left orphaned on disk.
+    /// Database config. To reset during development: change `name` → fresh
+    /// file, old one left orphaned on disk. `schemaVersion` is stamped into
+    /// the file as PRAGMA user_version; nothing reads it yet — a real
+    /// migration must be written before the schema ever changes.
     enum Database {
         static let name = "sysline.db"
         static let schemaVersion = 1

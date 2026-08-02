@@ -91,6 +91,22 @@ extension NetworkPoller {
             assert(ps.count == 1 && ps[0].pid == 881 && ps[0].name == "com.apple.WebKit.Networking"
                    && ps[0].bytesIn == 1000 && ps[0].bytesOut == 200, "last-dot pid split")
 
+            // DB recovery: a corrupt file must be set aside (not deleted) and
+            // replaced with a working fresh database — no crash, no data loss.
+            let fm = FileManager.default
+            let tempPath = NSTemporaryDirectory() + "sysline-selftest-\(getpid()).sqlite"
+            fm.createFile(atPath: tempPath, contents: Data("not a database".utf8))
+            let database = Database.openWithRecovery(path: tempPath)
+            try? await database.run(
+                "INSERT INTO speed_tests (ts,down_bps,up_bps,ping_ms,jitter_ms,network) VALUES (1,1,1,1,1,'t')")
+            let rows = (try? await database.query("SELECT COUNT(*) FROM speed_tests")) ?? []
+            assert(rows.first?.first?.intValue == 1, "recovered database is usable")
+            let setAside = ((try? fm.contentsOfDirectory(atPath: NSTemporaryDirectory())) ?? [])
+                .filter { $0.hasPrefix("sysline-selftest-\(getpid())") && $0.contains(".corrupt-") }
+            assert(!setAside.isEmpty, "corrupt file was set aside, not deleted")
+            for leftover in setAside { try? fm.removeItem(atPath: NSTemporaryDirectory() + leftover) }
+            for suffix in ["", "-wal", "-shm"] { try? fm.removeItem(atPath: tempPath + suffix) }
+
             print("selftest: PASS")
             exit(0)
         }

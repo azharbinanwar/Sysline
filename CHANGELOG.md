@@ -5,6 +5,12 @@ All notable changes to Sysline. Unreleased items ship with the next version.
 ## [Unreleased]
 
 ### Fixed
+- **A damaged database no longer crash-loops the app.** If the database file
+  won't open (disk corruption, wrong format), it is renamed aside with a
+  timestamp — never deleted — and a fresh database is created; the app keeps
+  running. Covered by a `--selftest` case. Also fixed a handle leak on failed
+  opens and corrected the schema-version comment that promised a migration
+  system that doesn't exist.
 - **History no longer shrinks.** The hourly rollup pruned raw samples mid-hour,
   so every hour older than 48h permanently lost ~half its bytes on the next
   rollup. Pruning is now hour-aligned; verified by simulation (old: 50% of

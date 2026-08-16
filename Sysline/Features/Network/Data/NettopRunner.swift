@@ -7,7 +7,13 @@ struct NettopRunner: Sendable {
         await Task.detached(priority: .utility) {
             let process = Process()
             process.executableURL = URL(fileURLWithPath: "/usr/bin/nettop")
-            process.arguments = ["-P", "-L", "1", "-x", "-J", "bytes_in,bytes_out"]
+            // -t external (all non-loopback interfaces) + -t undefined (sockets
+            // not yet tied to an interface): counts every real connection type
+            // while excluding localhost traffic, e.g. Android Studio ↔ emulator
+            // streaming that once recorded 270 GB/day of phantom usage.
+            process.arguments = ["-P", "-L", "1", "-x",
+                                 "-t", "external", "-t", "undefined",
+                                 "-J", "bytes_in,bytes_out"]
             let pipe = Pipe()
             process.standardOutput = pipe
             // Discard stderr: an unread stderr pipe that fills up would block

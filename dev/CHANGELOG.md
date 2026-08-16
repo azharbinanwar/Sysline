@@ -2,7 +2,14 @@
 
 All notable changes to Sysline. Unreleased items ship with the next version.
 
-## [Unreleased]
+## [1.0.1] — 2026-08-17
+
+### Fixed
+- Localhost traffic is no longer counted as usage — e.g. Android Studio ↔
+  emulator streaming recorded as hundreds of phantom GB per day. nettop now
+  reports only real interfaces (WiFi, wired, hotspot, VPN).
+
+## [1.0.0] — 2026-08-02
 
 ### Added
 - "90 Days" and "All" view ranges in the main window (popover and floating

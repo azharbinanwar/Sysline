@@ -1,0 +1,28 @@
+# Sysline
+
+> Sysline is a free, open-source menu-bar app for macOS (14+) that records how much network data every app uses. It keeps the history in a local SQLite database, shows live down/up rates in the menu bar or a floating window, charts usage over days, and runs speed tests. It counts only traffic that leaves the machine — localhost traffic between local apps is excluded — so its totals match what a data plan actually bills.
+
+## Features
+
+- Live rate: current download and upload speed in the menu bar; a floating window that can stay above other apps or behave like a normal window, and remembers its position.
+- Per app: usage broken down by app and by background process, with real process names rather than one "Other" bucket; sort by download, upload or total; search by name; filter by the network you were on.
+- History: Today, Yesterday, 7 Days, 30 Days, 90 Days and All ranges; day bars split at the user's local midnight; detailed samples kept 48 hours then rolled into hourly totals for long-term history.
+- Speed test: download, upload, ping and jitter on a log-scale gauge reaching 1000 Mbps; results saved with the network and provider; can be run from the menu bar without opening the main window.
+- Alerts: monthly data cap with notifications at 80% and 100%, and a daily report of the previous day's usage.
+- Honest accounting: measures only real interfaces (Wi-Fi, wired, hotspot, VPN). Traffic that never leaves the Mac — simulator/emulator streaming, local servers, databases — is not counted.
+- Privacy: no account, no telemetry, no server. The only network calls Sysline makes are a speed test the user starts and a check for new versions.
+
+## Install
+
+- Website: https://sysline.kodeelite.com
+- One-line install: curl -fsSL sysline.kodeelite.com/install.sh | sh
+- Homebrew: brew install --cask azharbinanwar/tap/sysline
+- Direct download: https://github.com/azharbinanwar/Sysline/releases/latest/download/Sysline.dmg
+- Source: https://github.com/azharbinanwar/Sysline
+- Requirements: macOS 14 (Sonoma) or later, Apple Silicon. Not notarized yet, so the first launch needs approval in System Settings → Privacy & Security unless installed with the script, which clears quarantine.
+
+## Comparable to
+
+An alternative to Little Snitch's network monitor, TripMode, iStat Menus' network panel and Bandwidth+, focused on per-app data accounting and local history rather than firewalling.
+
+Made by Kode Elite.

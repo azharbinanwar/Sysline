@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sysline: where your gigabytes actually went</title>
+<meta name="description" content="A macOS menu-bar app that records network usage per app, keeps the history on your Mac, and counts only the traffic that really left it.">
+<link rel="canonical" href="https://sysline.kodeelite.com/">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://sysline.kodeelite.com">
+<meta property="og:title" content="Sysline: where your gigabytes actually went">
+<meta property="og:description" content="A macOS menu-bar app that records network usage per app, keeps the history on your Mac, and counts only the traffic that really left it.">
+<meta property="og:image" content="https://sysline.kodeelite.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Sysline: where your gigabytes actually went.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Sysline: where your gigabytes actually went">
+<meta name="twitter:description" content="Per-app network usage in your menu bar. Local history, honest numbers, free.">
+<meta name="twitter:image" content="https://sysline.kodeelite.com/og.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="sysline.css">
+</head>
+<body>
+
+<div class="panel-bg" aria-hidden="true">
+  <div class="rule-grid"></div>
+  <canvas id="trace"></canvas>
+  <div class="vignette"></div>
+</div>
+
+<header class="nav wrap">
+  <a class="brand" href="#top">
+    <span class="brand-tile">
+      <svg width="19" height="12" viewBox="0 0 18 11" fill="currentColor" aria-hidden="true"><path d="M16.6693 0C17.4042 0 18 0.603378 18 1.34768C18 2.09199 17.4042 2.69536 16.6693 2.69536C16.5289 2.69536 16.3937 2.6733 16.2666 2.63251C15.5905 2.74223 15.1728 2.97761 14.8916 3.22835C14.4809 3.59463 14.2159 4.12011 13.9758 4.82932C13.8519 5.19534 13.7583 5.53245 13.6328 5.93975C13.5162 6.31797 13.3771 6.73764 13.1889 7.12829C12.7878 7.96132 12.1103 8.7496 10.8934 8.91445C10.409 8.98007 9.94652 8.89864 9.53309 8.66784C9.13722 8.44685 8.85241 8.12608 8.6443 7.81875C8.25664 7.24627 7.98733 6.47772 7.77986 5.93264C7.5398 5.30194 7.34227 4.84188 7.09903 4.5294C6.9017 4.2759 6.719 4.17074 6.42607 4.17074C6.09614 4.17074 5.91258 4.28558 5.70355 4.62195C5.43731 5.0504 5.24946 5.66632 4.98959 6.52855C4.75475 7.30773 4.45909 8.28985 3.94509 9.10169C3.5493 9.72683 3.01082 10.2737 2.27479 10.602C2.03373 10.8478 1.69981 11 1.33074 11C0.595792 11 0 10.3966 0 9.65232C0 8.90801 0.595792 8.30464 1.33074 8.30464C1.44299 8.30464 1.55198 8.31876 1.65611 8.34526C1.82536 8.21908 1.96877 8.05089 2.1025 7.83966C2.41763 7.34192 2.63277 6.67697 2.88439 5.84215C3.11096 5.09038 3.38521 4.12535 3.85067 3.37632C4.37335 2.53521 5.1911 1.87604 6.42607 1.87604C7.50765 1.87604 8.28153 2.40181 8.81372 3.0855C9.29999 3.71021 9.60493 4.49361 9.83116 5.08799C10.09 5.76799 10.2508 6.20618 10.448 6.49739C10.5131 6.59348 10.5556 6.63046 10.5705 6.64177C10.5775 6.64192 10.5896 6.64155 10.6085 6.63899C10.8712 6.6034 11.0255 6.49694 11.2163 6.1006C11.3242 5.87658 11.4212 5.59791 11.5319 5.23909C11.6335 4.90936 11.7583 4.47072 11.8948 4.06727C12.1757 3.23755 12.6001 2.24917 13.4556 1.4863C14.0537 0.952907 14.7991 0.584077 15.7207 0.402583C15.9621 0.154119 16.2979 0 16.6693 0Z"/></svg>
+    </span>
+    Sysline
+  </a>
+  <nav class="nav-links">
+    <a href="#live">Features</a>
+    <a href="#honest">Accuracy</a>
+    <a href="#privacy">Privacy</a>
+    <a class="nav-cta" href="https://github.com/azharbinanwar/Sysline/releases/latest/download/Sysline.dmg">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13"/><path d="M6 12l6 6 6-6"/><path d="M4 21h16"/></svg>Download</a>
+  </nav>
+</header>
+
+<!-- ================= HERO ================= -->
+<section class="hero wrap" id="top">
+  <div class="hero-copy">
+    <div class="pill mono"><span class="pill-dot"></span>Free · macOS 14+ · nothing leaves your Mac</div>
+    <h1>Where your gigabytes<br>actually went.</h1>
+    <p class="lede">Sysline sits in the menu bar and records what every app sends and receives. Open it and the month is already there, app by app, day by day.</p>
+    <div class="cta-row">
+      <a class="btn-dl" href="https://github.com/azharbinanwar/Sysline/releases/latest/download/Sysline.dmg">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13"/><path d="M6 12l6 6 6-6"/><path d="M4 21h16"/></svg>Download for macOS</a>
+      <span class="mono dim sm" id="dl-meta">Apple&nbsp;Silicon</span>
+    </div>
+    <div class="hero-term">
+      <button class="term" type="button" title="Copy the install command">
+        <span class="mono t-prompt">$</span>
+        <code class="mono">curl -fsSL sysline.kodeelite.com/install.sh | sh</code>
+        <span class="t-copy mono">Copy</span>
+      </button>
+      <button class="term" type="button" title="Copy the brew command">
+        <span class="mono t-prompt">$</span>
+        <code class="mono">brew install --cask azharbinanwar/tap/sysline</code>
+        <span class="t-copy mono">Copy</span>
+      </button>
+      <p class="mono dim sm">The installer clears the first-launch warning for you.</p>
+    </div>
+  </div>
+
+  <div class="hero-visual">
+    <div class="readout">
+      <div class="menubar">
+        <span class="mb-dots"><i></i><i></i><i></i></span>
+        <span class="mb-space"></span>
+        <span class="mb-chip mono">
+          <svg width="13" height="9" viewBox="0 0 18 11" fill="currentColor" aria-hidden="true"><path d="M16.6693 0C17.4042 0 18 0.603378 18 1.34768C18 2.09199 17.4042 2.69536 16.6693 2.69536C16.5289 2.69536 16.3937 2.6733 16.2666 2.63251C15.5905 2.74223 15.1728 2.97761 14.8916 3.22835C14.4809 3.59463 14.2159 4.12011 13.9758 4.82932C13.8519 5.19534 13.7583 5.53245 13.6328 5.93975C13.5162 6.31797 13.3771 6.73764 13.1889 7.12829C12.7878 7.96132 12.1103 8.7496 10.8934 8.91445C10.409 8.98007 9.94652 8.89864 9.53309 8.66784C9.13722 8.44685 8.85241 8.12608 8.6443 7.81875C8.25664 7.24627 7.98733 6.47772 7.77986 5.93264C7.5398 5.30194 7.34227 4.84188 7.09903 4.5294C6.9017 4.2759 6.719 4.17074 6.42607 4.17074C6.09614 4.17074 5.91258 4.28558 5.70355 4.62195C5.43731 5.0504 5.24946 5.66632 4.98959 6.52855C4.75475 7.30773 4.45909 8.28985 3.94509 9.10169C3.5493 9.72683 3.01082 10.2737 2.27479 10.602C2.03373 10.8478 1.69981 11 1.33074 11C0.595792 11 0 10.3966 0 9.65232C0 8.90801 0.595792 8.30464 1.33074 8.30464C1.44299 8.30464 1.55198 8.31876 1.65611 8.34526C1.82536 8.21908 1.96877 8.05089 2.1025 7.83966C2.41763 7.34192 2.63277 6.67697 2.88439 5.84215C3.11096 5.09038 3.38521 4.12535 3.85067 3.37632C4.37335 2.53521 5.1911 1.87604 6.42607 1.87604C7.50765 1.87604 8.28153 2.40181 8.81372 3.0855C9.29999 3.71021 9.60493 4.49361 9.83116 5.08799C10.09 5.76799 10.2508 6.20618 10.448 6.49739C10.5131 6.59348 10.5556 6.63046 10.5705 6.64177C10.5775 6.64192 10.5896 6.64155 10.6085 6.63899C10.8712 6.6034 11.0255 6.49694 11.2163 6.1006C11.3242 5.87658 11.4212 5.59791 11.5319 5.23909C11.6335 4.90936 11.7583 4.47072 11.8948 4.06727C12.1757 3.23755 12.6001 2.24917 13.4556 1.4863C14.0537 0.952907 14.7991 0.584077 15.7207 0.402583C15.9621 0.154119 16.2979 0 16.6693 0Z"/></svg>
+          <span class="mb-down">1.8 MB/s</span>
+        </span>
+      </div>
+
+      <div class="ro-live">
+        <canvas id="live" height="150"></canvas>
+      </div>
+
+      <div class="ro-stats">
+        <div class="ro-stat">
+          <div class="ro-label mono">now down</div>
+          <div class="ro-val down mono">1.8 <em>MB/s</em></div>
+        </div>
+        <div class="ro-stat">
+          <div class="ro-label mono">now up</div>
+          <div class="ro-val up mono">0.32 <em>MB/s</em></div>
+        </div>
+        <div class="ro-stat">
+          <div class="ro-label mono">today</div>
+          <div class="ro-val mono">1.94 <em>GB</em></div>
+        </div>
+      </div>
+      <p class="ro-cap mono">The menu bar shows the live rate. Everything else is one click away.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CHANNELS ================= -->
+<section class="quad wrap">
+  <a class="qcard" href="#live">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg>
+    <div class="q-name">Live rate</div>
+    <div class="q-line">Down and up per second, in the menu bar or a floating window.</div>
+  </a>
+  <a class="qcard" href="#apps">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18M9 9v11"/></svg>
+    <div class="q-name">Per app</div>
+    <div class="q-line">Every app and background process, sorted by what it used.</div>
+  </a>
+  <a class="qcard" href="#history">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V9M10 20V4M16 20v-8M22 20H2"/></svg>
+    <div class="q-name">History</div>
+    <div class="q-line">Today, a week, 90 days, or everything you have recorded.</div>
+  </a>
+  <a class="qcard" href="#speed">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 18a9 9 0 1 1 15 0"/><path d="M12 14l4-4"/></svg>
+    <div class="q-name">Speed test</div>
+    <div class="q-line">Download, upload and ping, kept with the rest of your history.</div>
+  </a>
+</section>
+
+<!-- ================= LIVE ================= -->
+<section id="live" class="sec wrap">
+  <div class="sec-copy">
+    <div class="eyebrow mono">Live rate</div>
+    <h2>A number you can<br>glance at.</h2>
+    <p class="body">The menu bar carries the current rate. Click it for today's totals and the top apps, or pull out the floating window and keep it in a corner while you work.</p>
+    <div class="bullets">
+      <div><span class="b-dot"></span>Down, up, or both — your choice of what the bar shows</div>
+      <div><span class="b-dot"></span>A floating window that can stay above other apps, or behave like a normal one</div>
+      <div><span class="b-dot"></span>It remembers where you left it</div>
+    </div>
+  </div>
+
+  <div class="stage" id="hud-stage">
+    <div class="hud-scene">
+      <div class="hud pinned" id="hud">
+        <div class="hud-head mono"><span>Sysline</span><span class="hud-range">Today</span></div>
+        <div class="hud-rows">
+          <div class="hud-row"><span class="arrow down">↓</span><span class="hud-num mono">1.94 GB</span></div>
+          <div class="hud-row"><span class="arrow up">↑</span><span class="hud-num mono">0.71 GB</span></div>
+        </div>
+        <canvas class="hud-spark" id="hud-spark" height="34"></canvas>
+      </div>
+    </div>
+    <p class="cap">Pinned above everything, or tucked behind — one toggle.</p>
+  </div>
+</section>
+
+<!-- ================= PER APP ================= -->
+<section id="apps" class="sec sec-flip wrap">
+  <div class="stage" id="apps-stage">
+    <div class="tbl">
+      <div class="tbl-head mono"><span>App</span><span>↓ In</span><span>↑ Out</span><span>Total</span></div>
+      <div class="tbl-body" id="tbl-body"></div>
+    </div>
+    <p class="cap">Sorted by total — in the app, any column will do.</p>
+  </div>
+  <div class="sec-copy">
+    <div class="eyebrow mono">Per app</div>
+    <h2>Down to the process<br>that did it.</h2>
+    <p class="body">Not just Chrome and Slack. Background processes get named too, so when something quietly uses a gigabyte overnight you can see which one.</p>
+    <div class="bullets">
+      <div><span class="b-dot"></span>Search by app, sort by download, upload or total</div>
+      <div><span class="b-dot"></span>Filter by the network you were on</div>
+      <div><span class="b-dot"></span>Real process names, not one big "Other" bucket</div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= HISTORY ================= -->
+<section id="history" class="sec wrap">
+  <div class="sec-copy">
+    <div class="eyebrow mono">History</div>
+    <h2>The month is<br>already there.</h2>
+    <p class="body">Sysline records from the moment you install it, so the answer to "what happened last Tuesday" is waiting for you. Days are split at your local midnight, not somewhere else's.</p>
+    <div class="range-row">
+      <button class="rchip mono on" data-r="7">7 Days</button>
+      <button class="rchip mono" data-r="30">30 Days</button>
+      <button class="rchip mono" data-r="90">90 Days</button>
+      <button class="rchip mono" data-r="all">All</button>
+    </div>
+    <p class="mono dim sm">Set a monthly cap and Sysline tells you at 80% and 100%, once each.</p>
+  </div>
+
+  <div class="stage">
+    <div class="chart-head">
+      <div class="legend mono">
+        <span><i class="sw down"></i>Download</span>
+        <span><i class="sw up"></i>Upload</span>
+      </div>
+      <span class="mono dim sm" id="hist-total"></span>
+    </div>
+    <canvas id="hist" height="190"></canvas>
+    <p class="cap" id="hist-cap">Seven days, split at your local midnight.</p>
+  </div>
+</section>
+
+<!-- ================= LOOPBACK BAND ================= -->
+<section class="band" id="honest">
+  <div class="wrap band-inner">
+    <div class="sec-copy">
+      <div class="eyebrow mono signal">The part other monitors get wrong</div>
+      <h2>It counts what actually<br>left your Mac.</h2>
+      <p class="body">Traffic between apps on your own machine — a simulator streaming its screen, a local database, a dev server — never touches your connection. Most tools count it anyway, and your day reads 270 GB.</p>
+      <p class="body">Sysline measures only the real interfaces: Wi‑Fi, ethernet, hotspot, VPN. Your data plan and your history agree.</p>
+    </div>
+    <div class="ledger" id="ledger">
+      <div class="led-row">
+        <span class="led-label mono">Counted by others</span>
+        <span class="led-bar"><i class="bad" style="width:100%"></i></span>
+        <span class="led-num mono">270 GB</span>
+      </div>
+      <div class="led-row">
+        <span class="led-label mono">Actually left the Mac</span>
+        <span class="led-bar"><i class="good" style="width:6%"></i></span>
+        <span class="led-num mono">1.9 GB</span>
+      </div>
+      <p class="led-cap mono">One day with an Android emulator open. The same day, measured two ways.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SPEED ================= -->
+<section id="speed" class="sec wrap">
+  <div class="stage stage-gauge" id="speed-stage">
+    <div class="g-dial">
+      <canvas id="gauge" width="360" height="280"></canvas>
+      <div class="g-center">
+        <div class="g-val mono">61.4</div>
+        <div class="g-unit mono">Mbps</div>
+      </div>
+    </div>
+    <div class="g-stats mono">
+      <span><b>61.4</b> down</span>
+      <span><b>22.8</b> up</span>
+      <span><b>38</b> ms</span>
+    </div>
+    <div class="rates">
+      <div class="rate">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 8-6 1.6L9.8 19z"/></svg>
+        <span class="r-name">Browsing</span><i class="dots" id="r-browsing"></i>
+      </div>
+      <div class="rate">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="11" rx="5.5"/><path d="M7 11v3M5.5 12.5h3M16 12h.01M18.5 14h.01"/></svg>
+        <span class="r-name">Gaming</span><i class="dots" id="r-gaming"></i>
+      </div>
+      <div class="rate">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M10.5 9.2l4.2 2.8-4.2 2.8z"/></svg>
+        <span class="r-name">Streaming</span><i class="dots" id="r-streaming"></i>
+      </div>
+      <div class="rate">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="13" height="12" rx="2.5"/><path d="M15 10.5l6-3.5v10l-6-3.5z"/></svg>
+        <span class="r-name">Video calls</span><i class="dots" id="r-calls"></i>
+      </div>
+    </div>
+    <p class="cap">A finished test, as the app shows it.</p>
+  </div>
+  <div class="sec-copy">
+    <div class="eyebrow mono">Speed test</div>
+    <h2>Is it your line,<br>or just that site?</h2>
+    <p class="body">Run a test from the menu bar and you get more than two numbers: download, upload, ping and jitter, then a verdict on what the connection can actually carry. One dial covers a slow café hotspot and a gigabit line.</p>
+    <div class="bullets">
+      <div><span class="b-dot"></span>Download, upload, ping and jitter</div>
+      <div><span class="b-dot"></span>Scored out of five for browsing, gaming, streaming and video calls</div>
+      <div><span class="b-dot"></span>Results kept with the network and provider they came from</div>
+      <div><span class="b-dot"></span>Runs from the menu bar without opening the app</div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= LOCAL ================= -->
+<section class="wrap local" id="privacy">
+  <div class="local-head">
+    <div class="eyebrow mono">Where it all lives</div>
+    <h2>On your Mac. That's the whole list.</h2>
+  </div>
+  <div class="local-grid">
+    <div class="lcard">
+      <div class="l-name">One file, yours</div>
+      <p>Everything sits in a single database in your Application Support folder. No server, no account, no sign-in.</p>
+    </div>
+    <div class="lcard">
+      <div class="l-name">Nothing phones home</div>
+      <p>Sysline talks to the network for two things only: a speed test you started, and checking whether a new version exists.</p>
+    </div>
+    <div class="lcard">
+      <div class="l-name">It stays small</div>
+      <p>Detailed samples are kept for two days and then folded into hourly totals, so a year of history is still a few megabytes.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= GET ================= -->
+<section id="get" class="wrap get">
+  <div class="get-card">
+    <h2>Put it in your menu bar.</h2>
+    <p class="body center">Free and open source. No account, no tracking, no subscription.</p>
+    <a class="btn-dl big" href="https://github.com/azharbinanwar/Sysline/releases/latest/download/Sysline.dmg">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13"/><path d="M6 12l6 6 6-6"/><path d="M4 21h16"/></svg>Download Sysline.dmg</a>
+    <div class="term-wrap">
+      <button class="term" type="button" title="Copy the install command">
+        <span class="mono t-prompt">$</span>
+        <code class="mono">curl -fsSL sysline.kodeelite.com/install.sh | sh</code>
+        <span class="t-copy mono">Copy</span>
+      </button>
+      <button class="term" type="button" title="Copy the brew command">
+        <span class="mono t-prompt">$</span>
+        <code class="mono">brew install --cask azharbinanwar/tap/sysline</code>
+        <span class="t-copy mono">Copy</span>
+      </button>
+      <p class="fineprint">Sysline is not notarized yet. The installer clears the warning for you; if you use the DMG or brew, approve the first launch once in System Settings → Privacy &amp; Security → Open Anyway.</p>
+    </div>
+    <div class="mono dim sm" id="get-meta">Apple Silicon · updates in place</div>
+  </div>
+</section>
+
+<footer class="wrap footer">
+  <div class="f-left">
+    <svg width="16" height="10" viewBox="0 0 18 11" fill="#4F5A6B" aria-hidden="true"><path d="M16.6693 0C17.4042 0 18 0.603378 18 1.34768C18 2.09199 17.4042 2.69536 16.6693 2.69536C16.5289 2.69536 16.3937 2.6733 16.2666 2.63251C15.5905 2.74223 15.1728 2.97761 14.8916 3.22835C14.4809 3.59463 14.2159 4.12011 13.9758 4.82932C13.8519 5.19534 13.7583 5.53245 13.6328 5.93975C13.5162 6.31797 13.3771 6.73764 13.1889 7.12829C12.7878 7.96132 12.1103 8.7496 10.8934 8.91445C10.409 8.98007 9.94652 8.89864 9.53309 8.66784C9.13722 8.44685 8.85241 8.12608 8.6443 7.81875C8.25664 7.24627 7.98733 6.47772 7.77986 5.93264C7.5398 5.30194 7.34227 4.84188 7.09903 4.5294C6.9017 4.2759 6.719 4.17074 6.42607 4.17074C6.09614 4.17074 5.91258 4.28558 5.70355 4.62195C5.43731 5.0504 5.24946 5.66632 4.98959 6.52855C4.75475 7.30773 4.45909 8.28985 3.94509 9.10169C3.5493 9.72683 3.01082 10.2737 2.27479 10.602C2.03373 10.8478 1.69981 11 1.33074 11C0.595792 11 0 10.3966 0 9.65232C0 8.90801 0.595792 8.30464 1.33074 8.30464C1.44299 8.30464 1.55198 8.31876 1.65611 8.34526C1.82536 8.21908 1.96877 8.05089 2.1025 7.83966C2.41763 7.34192 2.63277 6.67697 2.88439 5.84215C3.11096 5.09038 3.38521 4.12535 3.85067 3.37632C4.37335 2.53521 5.1911 1.87604 6.42607 1.87604C7.50765 1.87604 8.28153 2.40181 8.81372 3.0855C9.29999 3.71021 9.60493 4.49361 9.83116 5.08799C10.09 5.76799 10.2508 6.20618 10.448 6.49739C10.5131 6.59348 10.5556 6.63046 10.5705 6.64177C10.5775 6.64192 10.5896 6.64155 10.6085 6.63899C10.8712 6.6034 11.0255 6.49694 11.2163 6.1006C11.3242 5.87658 11.4212 5.59791 11.5319 5.23909C11.6335 4.90936 11.7583 4.47072 11.8948 4.06727C12.1757 3.23755 12.6001 2.24917 13.4556 1.4863C14.0537 0.952907 14.7991 0.584077 15.7207 0.402583C15.9621 0.154119 16.2979 0 16.6693 0Z"/></svg>
+    made by Kode Elite
+  </div>
+  <div class="f-right">
+    <a class="dim" href="https://github.com/azharbinanwar/Sysline">Source</a>
+    <a class="dim" href="https://github.com/azharbinanwar/Sysline/releases">Releases</a>
+  </div>
+</footer>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Sysline",
+  "operatingSystem": "macOS 14.0 or later",
+  "applicationCategory": "UtilitiesApplication",
+  "description": "Menu-bar network monitor for macOS: per-app usage, local history, speed tests. Counts only traffic that leaves the machine.",
+  "url": "https://sysline.kodeelite.com",
+  "downloadUrl": "https://github.com/azharbinanwar/Sysline/releases/latest/download/Sysline.dmg",
+  "image": "https://sysline.kodeelite.com/og.png",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "author": { "@type": "Organization", "name": "Kode Elite", "url": "https://sysline.kodeelite.com" }
+}
+</script>
+<script src="demo.js"></script>
+</body>
+</html>

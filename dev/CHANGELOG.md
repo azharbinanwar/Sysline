@@ -2,6 +2,13 @@
 
 All notable changes to Sysline. Unreleased items ship with the next version.
 
+## [1.0.2] — 2026-08-17
+
+### Fixed
+- The main window's compact range dropdown never showed the range you picked —
+  the toolbar collapsed its label to a bare arrow. It is now a native macOS
+  pop-up that always displays the current selection.
+
 ## [1.0.1] — 2026-08-17
 
 ### Fixed

@@ -45,6 +45,15 @@ struct MainWindowView: View {
         .fixedSize()
     }
 
+    // A real NSPopUpButton, not a SwiftUI Picker or Menu: the toolbar hosts
+    // SwiftUI-drawn menu controls in views it gives almost no width, so their
+    // labels collapse — the button ends up blank with just the arrows. The
+    // AppKit control draws its own title and claims its own width.
+    private var rangeMenu: some View {
+        RangePopUpButton(selection: $vm.range)
+            .accessibilityLabel("Range")
+    }
+
     // Menu checkmark binding: the chosen network reads as checked.
     private func networkChoice(_ network: String?) -> Binding<Bool> {
         Binding(get: { vm.networkFilter == network },
@@ -68,7 +77,7 @@ struct MainWindowView: View {
                         if windowWidth >= Self.segmentedMinWidth {
                             rangePicker.pickerStyle(.segmented)
                         } else {
-                            rangePicker.pickerStyle(.menu)
+                            rangeMenu
                         }
                     }
                     ToolbarItemGroup(placement: .primaryAction) {
